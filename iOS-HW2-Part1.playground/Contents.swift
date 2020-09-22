@@ -30,11 +30,26 @@ import UIKit
  #
  اكثر من 40 -> سمنة مفرطه
 */
+var height = 167
+var weight = 55
 
+ 
+func calculateBmi(weight: Double, height: Double) -> String {
+    let bmi = weight / (height * 2)
 
+    switch bmi {
+    case 0..<18.5:
+        return ("مؤشر كتله جسمك \(bmi) انت نحيف")
+    case 18.5..<25:
+        return (" مؤشر كتله جسمك \(bmi) وزنك طبيعي")
+    case 25...:
+        return (" مؤشر كتله جسمك \(bmi) وزنك زائد")
+    default:
+        return ""
+    }
+}
 
-
-
+print(calculateBmi(weight: 55, height: 167))
 //: # 2️⃣  السؤال الثاني
 
 /*:
@@ -51,4 +66,21 @@ import UIKit
   #
  و اذا كان فوق ١٨ سوف يتم طباعة نص بأن المتقدم يُسمح له بإمتلاك رخصة قيادة
 */
+var name = "Abdullah"
+var age = 16
+
+func checkAge(age: Double)-> String {
+    if age >= 18{
+    print("\(name) يسمح له بإمتلاك رخصه قيادة")
+    }
+    else{
+    print("\(name) لم يكمل العمر المطلوب")
+    }
+    return""
+}
+
+
+print(checkAge(age: 16))
+
+
 

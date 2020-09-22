@@ -82,24 +82,189 @@ var wild_Draw = UIImage(named: "Wild_Draw.png")
 //: ---
 
 //: # الحل ...
+//حاولت اسوي الواجب بطريقه من بره المنهج و ازيد عليه اشياء و كلها شفتها بالنت و تقريبا تسوي لعبه الاونو كامله
+//التعليقات الموجوده تشرح وظيفه الكود و اغلبها بالعربي
+//و آسف اني تأخرت لي آخر يوم تسليم بس احتجت وقت علشان افهمه هدل و اشرحه 🤓
 
+// البطاقات المميزه.
+enum Joker: String, CaseIterable {
+    // بس اربع نسخ بتكون موجوده
+    case joker, drawFour, swapCircle
+    func points() -> Int {
+        switch self {
+        case .joker, .drawFour, .swapCircle: return 50
+        }
+    }
+}
 
+// البطاقات العاديه.
+enum Value: String, CaseIterable {
+    
+    case one, two, three, four, five, six, seven, eight, nine, drawTwo, skip, turn
+    
+    func points() -> Int {
+        switch self {
+        
+        case .one: return 1
+        case .two: return 2
+        case .three: return 3
+        case .four: return 4
+        case .five: return 5
+        case .six: return 6
+        case .seven: return 7
+        case .eight: return 8
+        case .nine: return 9
+        case .drawTwo, .skip, .turn: return 20
+        }
+    }
+}
+// كل الألوان.
+enum Color: String, CaseIterable {
+    case red, blue, yellow, green
+}
 
-/// قم بإنشاء الستركت هنا
+// تبين نوع الكرت
+struct Card {
+    let value: Value? // is nil when card is a joker
+    let color:  Color? // is nil when card is a joker
+    let joker:  Joker? // is nil when card has a value and color
+}
 
-// struct ...
+// يسوي مكانين حق الكروت واحد الي يتوزع على اللاعبين و الثاني الي يسحبون منه ياللعبه
+class Stack {
+    public var stack: [Card]
 
+    // تسوي القرعه
+    private static func createDrawStack(with amountOfCards: Int) -> [Card] {
+        var cards = [Card]()
+        // اضافه كرتين من نفس القيمه
+        for color in Color.allCases {
+            for value in Value.allCases {
+                for _ in 0..<amountOfCards { // اضافه نسختين
+                    cards += [Card(value: value, color: color, joker: nil)]
+                }
+            }
+        }
+        for _ in 0..<(amountOfCards * 2) {
+            // add 1 swap-circle
+            cards += [Card(value: nil, color: nil, joker: .swapCircle)]
+            // add 1 draw-four
+            cards += [Card(value: nil, color: nil, joker: .drawFour)]
+            // add 1 joker
+            cards += [Card(value: nil, color: nil, joker: .joker)]
+        }
+        return cards.shuffled()
+    }
 
+    //يسوي المكان الي تكون الكروت موجوده فيه
+    private static func createGameStack(with drawStack: Stack) -> [Card] {
+        guard let topCard = drawStack.stack.popLast() else {
+            print("Why is the drawStack empty?")
+            return []
+        }
 
+        return [topCard]
+    }
+    init(createDrawStackWith amount: Int) {
+        self.stack = Stack.createDrawStack(with: amount)
+    }
+    init(createGameStackWith drawStack: Stack) {
+        self.stack = Stack.createGameStack(with: drawStack)
+    }
+}
 
+// تبين اللاعب و شنو الاشياء الي قدر يسويها
+class Player {
+    let id: Int
+    var hand = [Card?]()
+    var didDraw = false
 
-// لا تقم بإزالة الملاحظات إلا عند وصولك للمطلوب الثالث
+    // يستلم نوع البطاقه و يحددها
+    public func wantsToPlayCard(at index: Int) -> Card {
+        return hand[index]!
+    }
 
-//
-//let randomCard = cards.randomElement()!
-//let randomCardImage = UIImage(named: randomCard.imageName())
-//
-//
-//let cardImages = cards.map{UIImage(named: $0.imageName())}
-//randomCardImage
-//cardImages
+    // تاخذ الكرت من اللاعب لي مكان الكروت
+    public func playCard(at index: Int, onto playStack: Stack) {
+        if let card = self.hand.remove(at: index) {
+            playStack.stack.append(card)
+        }
+    }
+
+    // يودي الكرت حق اللاعب
+    public func drawCard(from deck: Stack) {
+        self.hand.append(deck.stack.popLast()!)
+    }
+
+    init(withID id: Int) {
+        self.id = id
+    }
+}
+
+// اهم شي باللعبه(الاساس)
+class Uno {
+
+    public var drawStack: Stack // creates a stack to draw from with 2 copies of each color
+    public var playStack: Stack // creates a stack where the game will be played
+    public var players: [Player] // will be initialized dependent of amount
+
+    // ياخذ الاوراق و يرجعها حق المكان الي يوزعها
+    public func resetDrawStack() {
+        let topCard = playStack.stack.popLast()! // save top card
+        drawStack.stack = playStack.stack // move rest of playStack back into drawStack
+        drawStack.stack.shuffle()
+        playStack.stack.removeAll()
+        playStack.stack += [topCard]
+    }
+
+    // تأكيد إذا كان اللاعب يقدر يستخدم الكرت
+    public func cardsMatch(compare topCard: Card, with handCard: Card) -> Bool {
+        // if colors match
+        if let colorTopCard = topCard.color, let colorHandCard = handCard.color {
+            if colorTopCard == colorHandCard {
+                return true
+            }
+        }
+        // إذا كانت النتيجه مطابقه
+        if let valueTopCard = topCard.value, let valueHandCard = handCard.value {
+            if valueTopCard == valueHandCard {
+                return true
+            }
+        }
+        // اذا كانت مميزه
+        if let _ = handCard.joker {
+            return true
+        }
+        // else
+        return false
+    }
+
+    // يجهز الكروت ببدايه الجوله
+    private func dealCards(with amountOfCards: Int) {
+        for id in players.indices {
+            for _ in 0..<amountOfCards {
+                players[id].drawCard(from: drawStack)
+            }
+        }
+    }
+
+    // تصنع اللاعبين
+    private static func createPlayers(with amountOfPlayers: Int) -> [Player] {
+        var players = [Player]()
+        for id in 0..<amountOfPlayers {
+            players += [Player(withID: id)]
+        }
+        return players
+    }
+
+    // يبني اللعبه(يعامد على الاعدادات)
+    init(amountOfPlayers: Int, amountOfCopies: Int, amountOfCards: Int) {
+        self.drawStack = Stack(createDrawStackWith: amountOfCopies)
+        print(self.drawStack.stack)
+        self.playStack = Stack(createGameStackWith: self.drawStack)
+        self.players = Uno.createPlayers(with: amountOfPlayers) // creates 2 players
+        self.dealCards(with: amountOfCards)
+    }
+}
+
+var game = Uno(amountOfPlayers: 2, amountOfCopies: 2, amountOfCards: 7)
